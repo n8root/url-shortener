@@ -1,0 +1,31 @@
+services:
+  database:
+    container_name: url-shortner-database
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER:=user
+      - POSTGRES_PASSWORD=password
+      - POSTGES_DB=url-shortner
+    ports:
+      - "5000:5432"
+    volumes:
+      - database:/var/lib/postgresql/data
+    networks:
+      - app
+
+  redis:
+    image: redis:7-alpine
+    container_name: url-shortner-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis:/data
+    networks:
+      - app
+
+volumes:
+  database:
+  redis:
+
+networks:
+  app:
