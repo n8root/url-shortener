@@ -1,4 +1,7 @@
-.PHONY build run lint migrate
+.PHONY: build run lint migrate
+
+dev:
+	go run ./cmd/app/main.go --config=./configs/local.yaml
 
 build:
 	go build -o bin/app ./cmd/app/main.go
