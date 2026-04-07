@@ -60,3 +60,11 @@ func (cfg *DatabaseConfig) Dsn() string {
 		cfg.Ssl,
 	)
 }
+
+func (cfg *CacheConfig) Addr() string {
+	return fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
+}
+
+func (cfg *ServerConfig) Addr() string {
+	return fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
+}

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"url-shortener/internal/config"
 )
 
@@ -18,5 +19,16 @@ func main() {
 		log.Fatalf("error get config %v", err)
 	}
 
-	fmt.Printf("%v", cfg)
+	serve(cfg)
+
+}
+
+func serve(cfg *config.Config) {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "Hello, URL Shortener!")
+	})
+
+	addr := cfg.Server.Addr()
+
+	http.ListenAndServe(addr, nil)
 }

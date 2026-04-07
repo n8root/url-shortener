@@ -1,12 +1,12 @@
 env: 'local'
 
 http_server:
-  host: "localhost"
-  port: 8080
+  host: "0.0.0.0"
+  port: 9090
 
 postgres:
   host: "localhost"
-  port: 5432
+  port: 5000
   user: "user"
   password: "password"
   db_name: "url_shortener"

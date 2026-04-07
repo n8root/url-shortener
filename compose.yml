@@ -3,9 +3,9 @@ services:
     container_name: url-shortner-database
     image: postgres:16-alpine
     environment:
-      - POSTGRES_USER:=user
+      - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
-      - POSTGES_DB=url-shortner
+      - POSTGRES_DB=url_shortner
     ports:
       - "5000:5432"
     volumes:

@@ -1,0 +1,12 @@
+[build]
+  # Как собирать (указываем путь к твоему main.go)
+  cmd = "go build -o ./tmp/main ./cmd/app/main.go"
+  
+  # Какой файл запускать после сборки
+  bin = "./tmp/main"
+  
+  # Какие папки игнорировать (чтобы не зациклиться)
+  exclude_dir = ["assets", "tmp", "vendor", "test"]
+  
+  # Какие расширения отслеживать
+  include_ext = ["go", "tpl", "tmpl", "html", "yaml", "yml"]
