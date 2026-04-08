@@ -51,7 +51,7 @@ func NewConfig(path string) (*Config, error) {
 
 func (cfg *DatabaseConfig) Dsn() string {
 	return fmt.Sprintf(
-		"user=%s password=%s host=%s port=%s name=%s sslmode=%s",
+		"user=%s password=%s host=%s port=%d dbname=%s sslmode=%s",
 		cfg.User,
 		cfg.Password,
 		cfg.Host,

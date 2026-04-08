@@ -2,10 +2,16 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"url-shortener/internal/config"
+	"url-shortener/internal/handlers"
+	"url-shortener/internal/lib/api"
+	"url-shortener/internal/repositories"
+	"url-shortener/internal/services"
+	"url-shortener/internal/storage"
+
+	"github.com/go-playground/validator/v10"
 )
 
 func main() {
@@ -24,11 +30,25 @@ func main() {
 }
 
 func serve(cfg *config.Config) {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "Hello, URL Shortener!")
-	})
+	v := validator.New()
+
+	storage, err := storage.NewStorage(cfg)
+
+	if err != nil {
+		log.Fatalf("error init storage %v", err)
+	}
+
+	urlRepository := repositories.NewUrlRepository(storage)
+	urlSerice := services.NewUrlService(urlRepository)
+	urlHandler := handlers.NewUrlHandler(urlSerice)
+
+	http.HandleFunc("POST /urls", api.Handle(v, urlHandler.Create))
 
 	addr := cfg.Server.Addr()
 
-	http.ListenAndServe(addr, nil)
+	log.Printf("Server started on %s", addr)
+
+	if err := http.ListenAndServe(addr, nil); err != nil {
+		log.Fatalf("server failed: %v", err)
+	}
 }
