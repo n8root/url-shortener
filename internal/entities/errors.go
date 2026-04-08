@@ -4,6 +4,7 @@ type EntityError struct {
 	Status  int
 	Code    string
 	Message string
+	Errors  any
 }
 
 func (e EntityError) Error() string {
@@ -20,4 +21,8 @@ func (e *EntityError) GetCode() string {
 
 func (e *EntityError) GetMessage() string {
 	return e.Message
+}
+
+func (e *EntityError) GetErrors() any {
+	return e.Errors
 }

@@ -30,7 +30,11 @@ func Handle[Req any, Res any](v *validator.Validate, logic HandleFunc[Req, Res])
 		request := NewRequest(r, v)
 
 		if err := request.Bind(&body); err != nil {
-			NewErrorResponse(err).Render(w)
+			NewErrorResponse(&entities.EntityError{
+				Status:  http.StatusUnprocessableEntity,
+				Code:    "ERR_VALIDATION",
+				Message: "validation err",
+			}).Render(w)
 			return
 		}
 
@@ -43,4 +47,14 @@ func Handle[Req any, Res any](v *validator.Validate, logic HandleFunc[Req, Res])
 
 		NewSuccessResponse(res).Render(w)
 	}
+}
+
+func formatValidatonErrors(ve validator.ValidationErrors) map[string]string {
+	errs := make(map[string]string)
+
+	for _, f := range ve {
+		errs[f.Field()] = "failed on the '" + f.Tag() + "' tag"
+	}
+
+	return errs
 }
