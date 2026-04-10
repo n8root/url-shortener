@@ -15,6 +15,10 @@ type CreateUrlRequest struct {
 	ExpiresAt   *time.Time `json:"expires_at"`
 }
 
+type GetByCodeRequest struct {
+	Code string
+}
+
 type UrlHandler struct {
 	service   services.UrlSerice
 	validator *validator.Validate
@@ -29,4 +33,8 @@ func NewUrlHandler(service services.UrlSerice) *UrlHandler {
 
 func (h *UrlHandler) Create(ctx context.Context, req CreateUrlRequest) (*entities.Url, error) {
 	return h.service.Create(ctx, services.CreateParams(req))
+}
+
+func (h *UrlHandler) GetByCode(ctx context.Context, req GetByCodeRequest) (*entities.Url, error) {
+	return h.service.GetByCode(ctx, req.Code)
 }
