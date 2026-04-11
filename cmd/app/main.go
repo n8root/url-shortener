@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"url-shortener/internal/config"
 	"url-shortener/internal/handlers"
+	"url-shortener/internal/lib/api"
 	"url-shortener/internal/repositories"
 	"url-shortener/internal/services"
 	"url-shortener/internal/storage"
@@ -39,21 +40,19 @@ func serve(cfg *config.Config) {
 		log.Fatalf("failed initialization storage %v", err)
 	}
 
-	urlRepository := repositories.NewUrlRepository(storage)
-	urlSerice := services.NewUrlService(urlRepository)
-	urlHandler := handlers.NewUrlHandler(urlSerice)
+	urlRepo := repositories.NewUrlRepository(storage)
+	urlSerice := services.NewUrlService(urlRepo, urlRepo)
+	urlHandler := handlers.NewUrlHandler(urlSerice, validator)
 
 	router.Route("/urls", func(r chi.Router) {
-		r.Post("/", )
+		r.Post("/", api.BindHandler(urlHandler.Create))
 	})
-
-	// http.HandleFunc("POST /urls", api.Handle(v, urlHandler.Create))
 
 	addr := cfg.Server.Addr()
 
 	log.Printf("Server started on %s", addr)
 
-	if err := http.ListenAndServe(addr, nil); err != nil {
+	if err := http.ListenAndServe(addr, router); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}
 }

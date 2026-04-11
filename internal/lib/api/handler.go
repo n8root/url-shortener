@@ -2,13 +2,11 @@ package api
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 )
 
 type appError interface {
 	GetStatus() int
-	GetCode() string
 	GetMessage() string
 }
 
@@ -16,21 +14,30 @@ type errContainer interface {
 	GetErrors() any
 }
 
-type handler func(r *http.Request) (*Response, error)
+type action func(r *http.Request) (*Response, error)
+type httpHandler func(w http.ResponseWriter, r *http.Request)
 
-func Handle(h handler, w http.ResponseWriter, r *http.Request) {
-	res, err := h(r)
+type Handler struct {
+	Action action
+}
+
+func BindHandler(a action) http.HandlerFunc {
+	h := Handler{Action: a}
+
+	return h.Handle
+}
+
+func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
+	res, err := h.Action(r)
 
 	if err != nil {
 		var errRes = ErrorResponse{
-			Code:    "SERVER_INTERNAL_ERR",
 			Status:  http.StatusInternalServerError,
-			Message: fmt.Sprintf("Server internal error %v", err),
+			Message: "Server internal error",
 		}
 
 		var ae appError
 		if ok := errors.As(err, &ae); ok {
-			errRes.Code = ae.GetCode()
 			errRes.Status = ae.GetStatus()
 			errRes.Message = ae.GetMessage()
 		}

@@ -4,14 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"url-shortener/internal/entities"
+	"url-shortener/internal/models"
 	"url-shortener/internal/storage"
 )
-
-type URLRepository interface {
-	Save(ctx context.Context, entity *entities.Url) error
-	GetByCode(ctx context.Context, code string) (*entities.Url, error)
-}
 
 type urlRepository struct {
 	Storage *storage.Storage
@@ -23,7 +18,7 @@ func NewUrlRepository(storage *storage.Storage) *urlRepository {
 	}
 }
 
-func (r *urlRepository) Save(ctx context.Context, entity *entities.Url) error {
+func (r *urlRepository) Save(ctx context.Context, entity *models.Url) error {
 	query := `
 		INSERT INTO urls (code, original_url, custom_alias, expires_at)
 		VALUES ($1, $2, $3, $4)
@@ -50,14 +45,14 @@ func (r *urlRepository) Save(ctx context.Context, entity *entities.Url) error {
 	return nil
 }
 
-func (r *urlRepository) GetByCode(ctx context.Context, code string) (*entities.Url, error) {
+func (r *urlRepository) GetByCode(ctx context.Context, code string) (*models.Url, error) {
 	query := `
 		SELECT id, code, original_url, custom_alias, created_at, expires_at, is_active
 			FROM urls
 				WHERE code = $1 AND is_active = true
 	`
 
-	var entity entities.Url
+	var entity models.Url
 
 	err := r.Storage.DB.QueryRow(ctx, query, code).Scan(
 		&entity.ID,
@@ -71,9 +66,8 @@ func (r *urlRepository) GetByCode(ctx context.Context, code string) (*entities.U
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, entities.EntityError{
+			return nil, models.EntityError{
 				Status:  404,
-				Code:    "URL_NOT_FOUND",
 				Message: "this alis is alredy taken",
 			}
 		}
@@ -82,4 +76,16 @@ func (r *urlRepository) GetByCode(ctx context.Context, code string) (*entities.U
 	}
 
 	return &entity, nil
+}
+
+func (r *urlRepository) ExistsByCode(ctx context.Context, code string) (bool, error) {
+	exists := false
+
+	query := `SELECT EXISTS (SELECT 1 FROM urls WHERE code=$1)`
+
+	if err := r.Storage.DB.QueryRow(ctx, query, code).Scan(&exists); err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }

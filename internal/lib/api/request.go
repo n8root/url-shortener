@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"url-shortener/internal/entities"
+	"url-shortener/internal/models"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -14,9 +14,8 @@ func Validate(s any, v *validator.Validate) error {
 	if err := v.Struct(s); err != nil {
 		var validateErrs validator.ValidationErrors
 		if errors.As(err, &validateErrs) {
-			return entities.EntityError{
+			return models.EntityError{
 				Status:  http.StatusUnprocessableEntity,
-				Code:    "VALIDATION_ERR",
 				Message: "Validation error",
 				Errors:  formatValidatonErrors(validateErrs),
 			}
@@ -28,12 +27,11 @@ func Validate(s any, v *validator.Validate) error {
 	return nil
 }
 
-func Bind(r *http.Request, dst any) error {
+func BindForm(r *http.Request, dst any) error {
 	if err := json.NewDecoder(r.Body).Decode(dst); err != nil {
 		if errors.Is(err, io.EOF) {
-			return entities.EntityError{
+			return models.EntityError{
 				Status:  http.StatusBadRequest,
-				Code:    "EMPTY_PAYLOAD_ERR",
 				Message: "Empty payload",
 			}
 		}

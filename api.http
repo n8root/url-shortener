@@ -1,0 +1,6 @@
+POST http://localhost:9090/urls HTTP/1.1
+content-type: application/json
+
+{
+    "original_url": "http://test.com"
+}

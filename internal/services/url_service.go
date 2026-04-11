@@ -2,67 +2,88 @@ package services
 
 import (
 	"context"
-	"errors"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
+	"fmt"
+	"net/http"
 	"time"
-	"url-shortener/internal/entities"
-	"url-shortener/internal/repositories"
-
-	"github.com/google/uuid"
+	"url-shortener/internal/models"
 )
 
-var (
-	ErrNotFound          = errors.New("url not found")
-	ErrAliasAlredyExists = errors.New("alias alredy exists")
-)
-
-type UrlSerice interface {
-	Create(ctx context.Context, params CreateParams) (*entities.Url, error)
-	GetByCode(ctx context.Context, code string) (*entities.Url, error)
+type urlWritter interface {
+	Save(context.Context, *models.Url) error
 }
 
-type urlService struct {
-	repo repositories.URLRepository
+type urlReader interface {
+	GetByCode(context.Context, string) (*models.Url, error)
+	ExistsByCode(context.Context, string) (bool, error)
 }
 
-type CreateParams struct {
-	Alias       string
-	OriginalUrl string
-	ExpiresAt   *time.Time
+type UrlService struct {
+	Writter urlWritter
+	Reader  urlReader
 }
 
-func NewUrlService(repo repositories.URLRepository) UrlSerice {
-	return &urlService{
-		repo: repo,
+func NewUrlService(writter urlWritter, reader urlReader) *UrlService {
+	return &UrlService{
+		Writter: writter,
+		Reader:  reader,
 	}
 }
 
-func (s *urlService) Create(ctx context.Context, params CreateParams) (*entities.Url, error) {
-	entity := &entities.Url{
-		Code:        params.Alias,
-		OriginalUrl: params.OriginalUrl,
-		CustomAlias: params.Alias != "",
-		ExpiresAt:   params.ExpiresAt,
+func (s *UrlService) Create(ctx context.Context, form models.CreateUrlForm) (*models.Url, error) {
+	model := &models.Url{
+		Code:        form.Alias,
+		OriginalUrl: form.OriginalUrl,
+		CustomAlias: form.Alias != "",
+		ExpiresAt:   form.ExpiresAt,
 	}
 
-	if params.Alias == "" {
-		entity.Code = uuid.New().String()
+	if form.Alias == "" {
+		model.Code = s.makeAlias(form.OriginalUrl)
 	}
 
-	err := s.repo.Save(ctx, entity)
+	exists, err := s.Reader.ExistsByCode(ctx, model.Code)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return entity, nil
-}
+	if exists {
+		return nil, models.EntityError{
+			Status:  http.StatusConflict,
+			Message: fmt.Sprintf("alias '%s' alredy exists", model.Code),
+		}
+	}
 
-func (s *urlService) GetByCode(ctx context.Context, code string) (*entities.Url, error) {
-	entity, err := s.repo.GetByCode(ctx, code)
+	err = s.Writter.Save(ctx, model)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return entity, err
+	return model, nil
+}
+
+func (s *UrlService) GetByCode(ctx context.Context, code string) (*models.Url, error) {
+	model, err := s.Reader.GetByCode(ctx, code)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return model, err
+}
+
+func (s *UrlService) makeAlias(url string) string {
+	randomBytes := make([]byte, 4)
+	rand.Read(randomBytes)
+
+	timestamp := time.Now().UnixNano()
+	payload := fmt.Sprintf("%s%d%x", url, timestamp, randomBytes)
+
+	hash := sha256.Sum256([]byte(payload))
+
+	return base64.RawURLEncoding.EncodeToString(hash[:])[:6]
 }
