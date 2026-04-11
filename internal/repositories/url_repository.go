@@ -52,17 +52,9 @@ func (r *urlRepository) GetByCode(ctx context.Context, code string) (*models.Url
 				WHERE code = $1 AND is_active = true
 	`
 
-	var entity models.Url
+	var model models.Url
 
-	err := r.Storage.DB.QueryRow(ctx, query, code).Scan(
-		&entity.ID,
-		&entity.Code,
-		&entity.OriginalUrl,
-		&entity.CustomAlias,
-		&entity.CreatedAt,
-		&entity.ExpiresAt,
-		&entity.IsActive,
-	)
+	err := r.Storage.DB.QueryRow(ctx, query, code).Scan(&model)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -75,7 +67,7 @@ func (r *urlRepository) GetByCode(ctx context.Context, code string) (*models.Url
 		return nil, err
 	}
 
-	return &entity, nil
+	return &model, nil
 }
 
 func (r *urlRepository) ExistsByCode(ctx context.Context, code string) (bool, error) {

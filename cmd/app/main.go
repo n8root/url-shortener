@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"time"
 	"url-shortener/internal/config"
 	"url-shortener/internal/handlers"
 	"url-shortener/internal/lib/api"
@@ -32,6 +33,9 @@ func main() {
 
 func serve(cfg *config.Config) {
 	validator := validator.New()
+
+	registerCustomRules(validator)
+
 	router := chi.NewRouter()
 
 	storage, err := storage.NewStorage(cfg)
@@ -56,4 +60,36 @@ func serve(cfg *config.Config) {
 	if err := http.ListenAndServe(addr, router); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}
+}
+
+func registerCustomRules(v *validator.Validate) {
+	_ = v.RegisterValidation("date_format", func(fl validator.FieldLevel) bool {
+		dateStr := fl.Field().String()
+		if dateStr == "" {
+			return true
+		}
+
+		layout := fl.Param()
+		if layout == "" {
+			layout = "2006-01-02"
+		}
+
+		_, err := time.Parse(layout, dateStr)
+		return err == nil
+	})
+
+	_ = v.RegisterValidation("tomorrow", func(fl validator.FieldLevel) bool {
+		dateStr := fl.Field().String()
+		if dateStr == "" {
+			return true
+		}
+
+		layout := fl.Param()
+		if layout == "" {
+			layout = "2006-01-02"
+		}
+
+		_, err := time.Parse(layout, dateStr)
+		return err == nil
+	})
 }

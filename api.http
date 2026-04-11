@@ -3,7 +3,8 @@ content-type: application/json
 
 {
     "original_url": "http://test.com",
-    "expires_at": "2026-04-12T15:04:05Z"
+    "expires_at": "2006-01-03",
+    "alias": "test"
 }
 
 ###

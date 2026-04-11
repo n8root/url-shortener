@@ -33,16 +33,11 @@ func NewUrlService(writter urlWritter, reader urlReader) *UrlService {
 }
 
 func (s *UrlService) Create(ctx context.Context, form models.CreateUrlForm) (*models.Url, error) {
-	expAt, err := time.Parse("YYYY-MM-DD", form.ExpiresAt)
-	if err != nil {
-		return nil, err
-	}
-
 	model := &models.Url{
 		Code:        form.Alias,
 		OriginalUrl: form.OriginalUrl,
 		CustomAlias: form.Alias != "",
-		ExpiresAt:   &expAt,
+		ExpiresAt:   form.ExpiresAt,
 	}
 
 	if form.Alias == "" {
