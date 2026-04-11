@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"log"
 	"net/http"
 )
 
@@ -14,8 +15,7 @@ type errContainer interface {
 	GetErrors() any
 }
 
-type action func(r *http.Request) (*Response, error)
-type httpHandler func(w http.ResponseWriter, r *http.Request)
+type action func(r *http.Request) (Renderer, error)
 
 type Handler struct {
 	Action action
@@ -29,6 +29,8 @@ func BindHandler(a action) http.HandlerFunc {
 
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	res, err := h.Action(r)
+
+	log.Printf("error: %w\n", err)
 
 	if err != nil {
 		var errRes = ErrorResponse{
@@ -47,9 +49,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 			errRes.Errors = ec.GetErrors()
 		}
 
-		RenderJson(w, errRes)
+		errRes.Render(w)
 		return
 	}
 
-	RenderJson(w, res)
+	res.Render(w)
 }

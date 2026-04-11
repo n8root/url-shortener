@@ -21,7 +21,7 @@ func NewUrlHandler(s *services.UrlService, v *validator.Validate) *UrlHandler {
 	}
 }
 
-func (h *UrlHandler) Create(r *http.Request) (*api.Response, error) {
+func (h *UrlHandler) Create(r *http.Request) (api.Renderer, error) {
 	form := models.CreateUrlForm{}
 
 	err := api.BindForm(r, &form)
@@ -42,9 +42,27 @@ func (h *UrlHandler) Create(r *http.Request) (*api.Response, error) {
 		return nil, err
 	}
 
-	return &api.Response{
-		Status:  http.StatusCreated,
-		Message: "Success",
-		Data:    url,
-	}, nil
+	res, err := api.NewResponse(http.StatusCreated, "Created", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (h *UrlHandler) RedirectByCode(r *http.Request) (api.Renderer, error) {
+	// code := r.PathValue("code")
+
+	// url, err := h.service.Reader.GetByCode(r.Context(), code)
+
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	res, err := api.NewRedirectResponse(403, "http://test.com")
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }

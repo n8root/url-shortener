@@ -8,12 +8,12 @@ type Url struct {
 	OriginalUrl string     `json:"original_url"`
 	CustomAlias bool       `json:"custom_alias"`
 	CreatedAt   time.Time  `json:"created_at"`
-	ExpiresAt   *time.Time `json:"expires_at"` // Используем указатель, чтобы в JSON был null
+	ExpiresAt   *time.Time `json:"expires_at"`
 	IsActive    bool       `json:"is_active"`
 }
 
 type CreateUrlForm struct {
-	Alias       string     `json:"alias" validate:"omitempty,alphanum,max=10"`
-	OriginalUrl string     `json:"original_url" validate:"required,url"`
-	ExpiresAt   *time.Time `json:"expires_at" validate:"omitempty,gt"`
+	Alias       string `json:"alias" validate:"omitempty,alphanum,max=10"`
+	OriginalUrl string `json:"original_url" validate:"required,url"`
+	ExpiresAt   string `json:"expires_at" validate:"omitempty"`
 }
