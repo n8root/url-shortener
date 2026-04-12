@@ -9,7 +9,7 @@ import (
 )
 
 type Renderer interface {
-	Render(w http.ResponseWriter)
+	Render(w http.ResponseWriter, r *http.Request)
 }
 
 type statuser interface {
@@ -40,8 +40,8 @@ func (r Response) GetStatus() int {
 	return r.Status
 }
 
-func (r *Response) Render(w http.ResponseWriter) {
-	renderJson(w, r)
+func (response *Response) Render(w http.ResponseWriter, r *http.Request) {
+	renderJson(w, response)
 }
 
 type ErrorResponse struct {
@@ -66,8 +66,8 @@ func NewErrorResponse(status int, message string, errors any) (*ErrorResponse, e
 	}, nil
 }
 
-func (r *ErrorResponse) Render(w http.ResponseWriter) {
-	renderJson(w, r)
+func (response *ErrorResponse) Render(w http.ResponseWriter, r *http.Request) {
+	renderJson(w, response)
 }
 
 type RedirectResponse struct {
@@ -90,8 +90,8 @@ func NewRedirectResponse(status int, url string) (*RedirectResponse, error) {
 	}, nil
 }
 
-func (r *RedirectResponse) Render(w http.ResponseWriter) {
-	http.Redirect(w, nil, r.Url, r.Status)
+func (response *RedirectResponse) Render(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, response.Url, response.Status)
 }
 
 func renderJson(w http.ResponseWriter, r statuser) {

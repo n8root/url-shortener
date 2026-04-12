@@ -6,6 +6,7 @@ import (
 	"url-shortener/internal/models"
 	"url-shortener/internal/services"
 
+	"github.com/go-chi/chi"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -51,15 +52,15 @@ func (h *UrlHandler) Create(r *http.Request) (api.Renderer, error) {
 }
 
 func (h *UrlHandler) RedirectByCode(r *http.Request) (api.Renderer, error) {
-	// code := r.PathValue("code")
+	code := chi.URLParam(r, "code")
 
-	// url, err := h.service.Reader.GetByCode(r.Context(), code)
+	url, err := h.service.GetByCode(r.Context(), code)
 
-	// if err != nil {
-	// 	return nil, err
-	// }
+	if err != nil {
+		return nil, err
+	}
 
-	res, err := api.NewRedirectResponse(403, "http://test.com")
+	res, err := api.NewRedirectResponse(http.StatusTemporaryRedirect, url.OriginalUrl)
 	if err != nil {
 		return nil, err
 	}

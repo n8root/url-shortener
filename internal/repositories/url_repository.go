@@ -2,10 +2,12 @@ package repositories
 
 import (
 	"context"
-	"database/sql"
 	"errors"
+	"fmt"
 	"url-shortener/internal/models"
 	"url-shortener/internal/storage"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type urlRepository struct {
@@ -54,13 +56,21 @@ func (r *urlRepository) GetByCode(ctx context.Context, code string) (*models.Url
 
 	var model models.Url
 
-	err := r.Storage.DB.QueryRow(ctx, query, code).Scan(&model)
+	err := r.Storage.DB.QueryRow(ctx, query, code).Scan(
+		&model.ID,
+		&model.Code,
+		&model.OriginalUrl,
+		&model.CustomAlias,
+		&model.CreatedAt,
+		&model.ExpiresAt,
+		&model.IsActive,
+	)
 
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, models.EntityError{
 				Status:  404,
-				Message: "this alis is alredy taken",
+				Message: fmt.Sprintf("url by code %s not found", code),
 			}
 		}
 

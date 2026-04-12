@@ -1,9 +1,10 @@
 package storage
 
 import (
+	"context"
 	"url-shortener/internal/config"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -13,7 +14,7 @@ type Storage struct {
 }
 
 func NewStorage(cfg *config.Config) (*Storage, error) {
-	pg, err := NewPgCon(&cfg.Database)
+	pg, err := NewPgPool(context.Background(), &cfg.Database)
 	if err != nil {
 		return nil, err
 	}

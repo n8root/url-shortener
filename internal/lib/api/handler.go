@@ -2,7 +2,6 @@ package api
 
 import (
 	"errors"
-	"log"
 	"net/http"
 )
 
@@ -30,7 +29,8 @@ func BindHandler(a action) http.HandlerFunc {
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	res, err := h.Action(r)
 
-	log.Printf("error: %w\n", err)
+	// log.Printf("error: %v\n", err)
+	// log.Printf("Stack trace:\n%s\n", debug.Stack())
 
 	if err != nil {
 		var errRes = ErrorResponse{
@@ -49,9 +49,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 			errRes.Errors = ec.GetErrors()
 		}
 
-		errRes.Render(w)
+		errRes.Render(w, r)
 		return
 	}
 
-	res.Render(w)
+	res.Render(w, r)
 }

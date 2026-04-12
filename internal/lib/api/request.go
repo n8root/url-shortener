@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"url-shortener/internal/models"
@@ -28,11 +29,21 @@ func Validate(s any, v *validator.Validate) error {
 }
 
 func BindForm(r *http.Request, dst any) error {
+	defer r.Body.Close()
+
 	if err := json.NewDecoder(r.Body).Decode(dst); err != nil {
 		if errors.Is(err, io.EOF) {
 			return models.EntityError{
 				Status:  http.StatusBadRequest,
 				Message: "Empty payload",
+			}
+		}
+
+		var syntaxErr *json.SyntaxError
+		if errors.As(err, &syntaxErr) {
+			return models.EntityError{
+				Status:  http.StatusBadRequest,
+				Message: fmt.Sprintf("Malformed JSON at position %d", syntaxErr.Offset),
 			}
 		}
 

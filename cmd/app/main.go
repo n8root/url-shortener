@@ -50,7 +50,7 @@ func serve(cfg *config.Config) {
 
 	router.Route("/urls", func(r chi.Router) {
 		r.Post("/", api.BindHandler(urlHandler.Create))
-		r.Get("/:code/", api.BindHandler(urlHandler.RedirectByCode))
+		r.Get("/{code}", api.BindHandler(urlHandler.RedirectByCode))
 	})
 
 	addr := cfg.Server.Addr()

@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 	"url-shortener/internal/models"
@@ -33,11 +34,13 @@ func NewUrlService(writter urlWritter, reader urlReader) *UrlService {
 }
 
 func (s *UrlService) Create(ctx context.Context, form models.CreateUrlForm) (*models.Url, error) {
+	t, _ := time.Parse(time.DateOnly, form.ExpiresAt)
+
 	model := &models.Url{
 		Code:        form.Alias,
 		OriginalUrl: form.OriginalUrl,
 		CustomAlias: form.Alias != "",
-		ExpiresAt:   form.ExpiresAt,
+		ExpiresAt:   &t,
 	}
 
 	if form.Alias == "" {
@@ -71,6 +74,15 @@ func (s *UrlService) GetByCode(ctx context.Context, code string) (*models.Url, e
 
 	if err != nil {
 		return nil, err
+	}
+
+	log.Printf("%+v", model.IsExpired())
+
+	if model.IsExpired() {
+		return nil, models.EntityError{
+			Status:  http.StatusGone,
+			Message: fmt.Sprintf("alias '%s' is expired", model.Code),
+		}
 	}
 
 	return model, err
