@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"url-shortener/internal/models"
 	"url-shortener/internal/storage"
 
@@ -90,4 +91,22 @@ func (r *urlRepository) ExistsByCode(ctx context.Context, code string) (bool, er
 	}
 
 	return exists, nil
+}
+
+func (r *urlRepository) DeleteByCode(ctx context.Context, code string) error {
+	query := `DELETE FROM urls WHERE code=$1`
+
+	res, err := r.Storage.DB.Exec(ctx, query, code)
+	if err != nil {
+		return err
+	}
+
+	if res.RowsAffected() < 1 {
+		return models.EntityError{
+			Status:  http.StatusNotFound,
+			Message: fmt.Sprintf("url by '%s' not found", code),
+		}
+	}
+
+	return nil
 }

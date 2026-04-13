@@ -48,13 +48,19 @@ func serve(cfg *config.Config) {
 	clickSvc := services.NewClickService(clickRepo)
 
 	urlRepo := repositories.NewUrlRepository(storage)
-	urlSvc := services.NewUrlService(urlRepo, urlRepo)
+	urlSvc := services.NewUrlService(urlRepo, urlRepo, urlRepo)
 
 	urlHandler := handlers.NewUrlHandler(urlSvc, clickSvc, validator)
+	statsHandler := handlers.NewStatsHandler()
 
 	router.Route("/urls", func(r chi.Router) {
 		r.Post("/", api.BindHandler(urlHandler.Create))
 		r.Get("/{code}", api.BindHandler(urlHandler.RedirectByCode))
+		r.Delete("/{code}", api.BindHandler(urlHandler.DeleteByCode))
+	})
+
+	router.Route("/stats", func(r chi.Router) {
+		r.Get("/{code}", api.BindHandler(statsHandler.GetStatsByCode))
 	})
 
 	addr := cfg.Server.Addr()

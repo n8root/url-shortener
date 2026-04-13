@@ -19,7 +19,7 @@ type statuser interface {
 type Response struct {
 	Status  int    `json:"status"`
 	Message string `json:"message"`
-	Data    any    `json:"data"`
+	Data    any    `json:"data,omitempty"`
 	Meta    any    `json:"meta,omitempty"`
 }
 
@@ -36,12 +36,22 @@ func NewResponse(status int, message string, data any, meta any) (*Response, err
 	}, nil
 }
 
-func (r Response) GetStatus() int {
-	return r.Status
+func (res Response) GetStatus() int {
+	return res.Status
 }
 
-func (response *Response) Render(w http.ResponseWriter, r *http.Request) {
-	renderJson(w, response)
+func (res *Response) Render(w http.ResponseWriter, r *http.Request) {
+	renderJson(w, res)
+}
+
+type NoContentReponce struct{}
+
+func (res NoContentReponce) GetStatus() int {
+	return http.StatusNoContent
+}
+
+func (res NoContentReponce) Render(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(res.GetStatus())
 }
 
 type ErrorResponse struct {
@@ -50,8 +60,8 @@ type ErrorResponse struct {
 	Errors  any    `json:"errors,omitempty"`
 }
 
-func (r ErrorResponse) GetStatus() int {
-	return r.Status
+func (res ErrorResponse) GetStatus() int {
+	return res.Status
 }
 
 func NewErrorResponse(status int, message string, errors any) (*ErrorResponse, error) {
@@ -66,8 +76,8 @@ func NewErrorResponse(status int, message string, errors any) (*ErrorResponse, e
 	}, nil
 }
 
-func (response *ErrorResponse) Render(w http.ResponseWriter, r *http.Request) {
-	renderJson(w, response)
+func (res *ErrorResponse) Render(w http.ResponseWriter, r *http.Request) {
+	renderJson(w, res)
 }
 
 type RedirectResponse struct {
@@ -90,8 +100,8 @@ func NewRedirectResponse(status int, url string) (*RedirectResponse, error) {
 	}, nil
 }
 
-func (response *RedirectResponse) Render(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, response.Url, response.Status)
+func (res *RedirectResponse) Render(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, res.Url, res.Status)
 }
 
 func renderJson(w http.ResponseWriter, r statuser) {

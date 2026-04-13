@@ -20,16 +20,18 @@ type urlReader interface {
 	ExistsByCode(context.Context, string) (bool, error)
 }
 
-type urlService struct {
-	Writter urlWritter
-	Reader  urlReader
+type urlDeleter interface {
+	DeleteByCode(context.Context, string) error
 }
 
-func NewUrlService(writter urlWritter, reader urlReader) *urlService {
-	return &urlService{
-		Writter: writter,
-		Reader:  reader,
-	}
+type urlService struct {
+	writter urlWritter
+	reader  urlReader
+	deleter urlDeleter
+}
+
+func NewUrlService(w urlWritter, r urlReader, d urlDeleter) *urlService {
+	return &urlService{writter: w, reader: r, deleter: d}
 }
 
 func (s *urlService) Create(ctx context.Context, f *models.CreateUrlForm) (*models.Url, error) {
@@ -43,10 +45,15 @@ func (s *urlService) Create(ctx context.Context, f *models.CreateUrlForm) (*mode
 	}
 
 	if f.Alias == "" {
-		model.Code = s.makeAlias(f.OriginalUrl)
+		c, err := s.makeAlias(f.OriginalUrl)
+		if err != nil {
+			return nil, err
+		}
+
+		model.Code = c
 	}
 
-	exists, err := s.Reader.ExistsByCode(ctx, model.Code)
+	exists, err := s.reader.ExistsByCode(ctx, model.Code)
 
 	if err != nil {
 		return nil, err
@@ -59,7 +66,7 @@ func (s *urlService) Create(ctx context.Context, f *models.CreateUrlForm) (*mode
 		}
 	}
 
-	err = s.Writter.Save(ctx, model)
+	err = s.writter.Save(ctx, model)
 
 	if err != nil {
 		return nil, err
@@ -69,7 +76,7 @@ func (s *urlService) Create(ctx context.Context, f *models.CreateUrlForm) (*mode
 }
 
 func (s *urlService) GetByCode(ctx context.Context, code string) (*models.Url, error) {
-	model, err := s.Reader.GetByCode(ctx, code)
+	model, err := s.reader.GetByCode(ctx, code)
 
 	if err != nil {
 		return nil, err
@@ -85,14 +92,26 @@ func (s *urlService) GetByCode(ctx context.Context, code string) (*models.Url, e
 	return model, err
 }
 
-func (s *urlService) makeAlias(url string) string {
+func (s *urlService) DeleteByCode(ctx context.Context, code string) error {
+	if err := s.deleter.DeleteByCode(ctx, code); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *urlService) makeAlias(url string) (string, error) {
 	randomBytes := make([]byte, 4)
-	rand.Read(randomBytes)
+	_, err := rand.Read(randomBytes)
+
+	if err != nil {
+		return "", err
+	}
 
 	timestamp := time.Now().UnixNano()
 	payload := fmt.Sprintf("%s%d%x", url, timestamp, randomBytes)
 
 	hash := sha256.Sum256([]byte(payload))
 
-	return base64.RawURLEncoding.EncodeToString(hash[:])[:6]
+	return base64.RawURLEncoding.EncodeToString(hash[:])[:6], nil
 }

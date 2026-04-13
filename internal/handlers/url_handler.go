@@ -15,6 +15,7 @@ import (
 type urlService interface {
 	Create(ctx context.Context, f *models.CreateUrlForm) (*models.Url, error)
 	GetByCode(ctx context.Context, code string) (*models.Url, error)
+	DeleteByCode(ctx context.Context, code string) error
 }
 
 type clickService interface {
@@ -86,6 +87,16 @@ func (h *urlHandler) RedirectByCode(r *http.Request) (api.Renderer, error) {
 	)
 
 	return api.NewRedirectResponse(http.StatusTemporaryRedirect, url.OriginalUrl)
+}
+
+func (h *urlHandler) DeleteByCode(r *http.Request) (api.Renderer, error) {
+	code := chi.URLParam(r, "code")
+
+	if err := h.urlServicve.DeleteByCode(r.Context(), code); err != nil {
+		return nil, err
+	}
+
+	return api.NoContentReponce{}, nil
 }
 
 func (h *urlHandler) createClickAsync(urlID int, code, ip, refer, ua string) {
