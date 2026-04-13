@@ -29,3 +29,7 @@ volumes:
 
 networks:
   app:
+    name: url_shortener_network
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16

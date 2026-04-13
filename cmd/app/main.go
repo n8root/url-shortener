@@ -44,9 +44,13 @@ func serve(cfg *config.Config) {
 		log.Fatalf("failed initialization storage %v", err)
 	}
 
+	clickRepo := repositories.NewClickRepository(storage)
+	clickSvc := services.NewClickService(clickRepo)
+
 	urlRepo := repositories.NewUrlRepository(storage)
-	urlSerice := services.NewUrlService(urlRepo, urlRepo)
-	urlHandler := handlers.NewUrlHandler(urlSerice, validator)
+	urlSvc := services.NewUrlService(urlRepo, urlRepo)
+
+	urlHandler := handlers.NewUrlHandler(urlSvc, clickSvc, validator)
 
 	router.Route("/urls", func(r chi.Router) {
 		r.Post("/", api.BindHandler(urlHandler.Create))

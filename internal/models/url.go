@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type Url struct {
 	ID          int        `json:"id" db:"id"`
@@ -17,7 +19,7 @@ func (u Url) IsExpired() bool {
 		return false
 	}
 
-	return !u.ExpiresAt.UTC().Before(u.ExpiresAt.UTC())
+	return u.ExpiresAt.UTC().Before(time.Now().UTC())
 }
 
 type CreateUrlForm struct {

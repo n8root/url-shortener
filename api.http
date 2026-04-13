@@ -3,9 +3,9 @@ content-type: application/json
 
 {
     "original_url": "http://google.com",
-    "expires_at": "2000-03-03"
+    "expires_at": "2025-04-30"
 }
 
 ###
 
-GET http://localhost:9090/urls/g7YoIc HTTP/1.1
+GET http://localhost:9090/urls/IsTCj6 HTTP/1.1

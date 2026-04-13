@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 	"url-shortener/internal/models"
@@ -21,30 +20,30 @@ type urlReader interface {
 	ExistsByCode(context.Context, string) (bool, error)
 }
 
-type UrlService struct {
+type urlService struct {
 	Writter urlWritter
 	Reader  urlReader
 }
 
-func NewUrlService(writter urlWritter, reader urlReader) *UrlService {
-	return &UrlService{
+func NewUrlService(writter urlWritter, reader urlReader) *urlService {
+	return &urlService{
 		Writter: writter,
 		Reader:  reader,
 	}
 }
 
-func (s *UrlService) Create(ctx context.Context, form models.CreateUrlForm) (*models.Url, error) {
-	t, _ := time.Parse(time.DateOnly, form.ExpiresAt)
+func (s *urlService) Create(ctx context.Context, f *models.CreateUrlForm) (*models.Url, error) {
+	t, _ := time.Parse(time.DateOnly, f.ExpiresAt)
 
 	model := &models.Url{
-		Code:        form.Alias,
-		OriginalUrl: form.OriginalUrl,
-		CustomAlias: form.Alias != "",
+		Code:        f.Alias,
+		OriginalUrl: f.OriginalUrl,
+		CustomAlias: f.Alias != "",
 		ExpiresAt:   &t,
 	}
 
-	if form.Alias == "" {
-		model.Code = s.makeAlias(form.OriginalUrl)
+	if f.Alias == "" {
+		model.Code = s.makeAlias(f.OriginalUrl)
 	}
 
 	exists, err := s.Reader.ExistsByCode(ctx, model.Code)
@@ -69,14 +68,12 @@ func (s *UrlService) Create(ctx context.Context, form models.CreateUrlForm) (*mo
 	return model, nil
 }
 
-func (s *UrlService) GetByCode(ctx context.Context, code string) (*models.Url, error) {
+func (s *urlService) GetByCode(ctx context.Context, code string) (*models.Url, error) {
 	model, err := s.Reader.GetByCode(ctx, code)
 
 	if err != nil {
 		return nil, err
 	}
-
-	log.Printf("%+v", model.IsExpired())
 
 	if model.IsExpired() {
 		return nil, models.EntityError{
@@ -88,7 +85,7 @@ func (s *UrlService) GetByCode(ctx context.Context, code string) (*models.Url, e
 	return model, err
 }
 
-func (s *UrlService) makeAlias(url string) string {
+func (s *urlService) makeAlias(url string) string {
 	randomBytes := make([]byte, 4)
 	rand.Read(randomBytes)
 
