@@ -56,7 +56,7 @@ func (m *Url) MakeCode() error {
 }
 
 type CreateUrlForm struct {
-	Alias       string `json:"alias" validate:"omitempty,alphanum,max=32,min=2,excluded_aliases"`
+	Alias       string `json:"alias" validate:"omitempty,alphanum,max=32,min=3,excluded_aliases"`
 	OriginalUrl string `json:"original_url" validate:"required,url,only_http,max=2048"`
 	ExpiresAt   string `json:"expires_at" validate:"omitempty,date_format=2006-01-02"`
 }
