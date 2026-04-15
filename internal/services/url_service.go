@@ -2,9 +2,7 @@ package services
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -45,12 +43,10 @@ func (s *urlService) Create(ctx context.Context, f *models.CreateUrlForm) (*mode
 	}
 
 	if f.Alias == "" {
-		c, err := s.makeAlias(f.OriginalUrl)
+		err := model.MakeCode()
 		if err != nil {
 			return nil, err
 		}
-
-		model.Code = c
 	}
 
 	exists, err := s.reader.ExistsByCode(ctx, model.Code)
@@ -100,18 +96,27 @@ func (s *urlService) DeleteByCode(ctx context.Context, code string) error {
 	return nil
 }
 
-func (s *urlService) makeAlias(url string) (string, error) {
-	randomBytes := make([]byte, 4)
-	_, err := rand.Read(randomBytes)
+func (s *urlService) generateCode(ctx context.Context, url *models.Url) error {
+	iteration := 3
 
-	if err != nil {
-		return "", err
+	for iteration != 0 {
+		err := url.MakeCode()
+
+		if err != nil {
+			return err
+		}
+
+		exists, err := s.reader.ExistsByCode(ctx, url.Code)
+		if err != nil {
+			return err
+		}
+
+		if !exists {
+			return nil
+		}
+
+		iteration--
 	}
 
-	timestamp := time.Now().UnixNano()
-	payload := fmt.Sprintf("%s%d%x", url, timestamp, randomBytes)
-
-	hash := sha256.Sum256([]byte(payload))
-
-	return base64.RawURLEncoding.EncodeToString(hash[:])[:6], nil
+	return errors.New("generate alias failed")
 }

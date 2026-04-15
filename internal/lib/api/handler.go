@@ -2,7 +2,9 @@ package api
 
 import (
 	"errors"
+	"log"
 	"net/http"
+	"runtime/debug"
 )
 
 type appError interface {
@@ -29,10 +31,10 @@ func BindHandler(a action) http.HandlerFunc {
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	res, err := h.Action(r)
 
-	// log.Printf("error: %v\n", err)
-	// log.Printf("Stack trace:\n%s\n", debug.Stack())
-
 	if err != nil {
+		log.Printf("error: %v\n", err)
+		log.Printf("Stack trace:\n%s\n", debug.Stack())
+
 		var errRes = ErrorResponse{
 			Status:  http.StatusInternalServerError,
 			Message: "Server internal error",

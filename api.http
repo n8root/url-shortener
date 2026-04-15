@@ -1,19 +1,20 @@
+## Create alias
 POST http://localhost:9090/urls HTTP/1.1
 content-type: application/json
 
 {
     "original_url": "http://google.com",
-    "expires_at": "2025-04-30"
+    "expires_at": "2026-04-30"
 }
 
 ###
-
-GET http://localhost:9090/urls/IsTCj6 HTTP/1.1
-
-###
-
-DELETE http://localhost:9090/urls/XwggwG HTTP/1.1
+## Redirect by code
+GET http://localhost:9090/urls/3GhHyC HTTP/1.1
 
 ###
+## Delete by code
+DELETE http://localhost:9090/urls/b7Byez HTTP/1.1
 
-GET http://localhost:9090/stats/IsTCj6 HTTP/1.1
+###
+## Stats by code
+GET http://localhost:9090/stats/3VpS1d HTTP/1.1

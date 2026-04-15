@@ -4,16 +4,15 @@ import (
 	"flag"
 	"log"
 	"net/http"
-	"time"
 	"url-shortener/internal/config"
 	"url-shortener/internal/handlers"
 	"url-shortener/internal/lib/api"
 	"url-shortener/internal/repositories"
 	"url-shortener/internal/services"
 	"url-shortener/internal/storage"
+	"url-shortener/internal/validator"
 
 	"github.com/go-chi/chi"
-	"github.com/go-playground/validator/v10"
 )
 
 func main() {
@@ -32,9 +31,7 @@ func main() {
 }
 
 func serve(cfg *config.Config) {
-	validator := validator.New()
-
-	registerCustomRules(validator)
+	validator := validator.NewValidator()
 
 	router := chi.NewRouter()
 
@@ -45,13 +42,13 @@ func serve(cfg *config.Config) {
 	}
 
 	clickRepo := repositories.NewClickRepository(storage)
-	clickSvc := services.NewClickService(clickRepo)
+	clickSvc := services.NewClickService(clickRepo, clickRepo)
 
 	urlRepo := repositories.NewUrlRepository(storage)
 	urlSvc := services.NewUrlService(urlRepo, urlRepo, urlRepo)
 
 	urlHandler := handlers.NewUrlHandler(urlSvc, clickSvc, validator)
-	statsHandler := handlers.NewStatsHandler()
+	statsHandler := handlers.NewStatsHandler(clickSvc)
 
 	router.Route("/urls", func(r chi.Router) {
 		r.Post("/", api.BindHandler(urlHandler.Create))
@@ -70,36 +67,4 @@ func serve(cfg *config.Config) {
 	if err := http.ListenAndServe(addr, router); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}
-}
-
-func registerCustomRules(v *validator.Validate) {
-	_ = v.RegisterValidation("date_format", func(fl validator.FieldLevel) bool {
-		dateStr := fl.Field().String()
-		if dateStr == "" {
-			return true
-		}
-
-		layout := fl.Param()
-		if layout == "" {
-			layout = "2006-01-02"
-		}
-
-		_, err := time.Parse(layout, dateStr)
-		return err == nil
-	})
-
-	_ = v.RegisterValidation("tomorrow", func(fl validator.FieldLevel) bool {
-		dateStr := fl.Field().String()
-		if dateStr == "" {
-			return true
-		}
-
-		layout := fl.Param()
-		if layout == "" {
-			layout = "2006-01-02"
-		}
-
-		_, err := time.Parse(layout, dateStr)
-		return err == nil
-	})
 }

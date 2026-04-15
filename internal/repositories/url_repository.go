@@ -2,13 +2,16 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 	"url-shortener/internal/models"
 	"url-shortener/internal/storage"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/redis/go-redis/v9"
 )
 
 type urlRepository struct {
@@ -49,15 +52,28 @@ func (r *urlRepository) Save(ctx context.Context, entity *models.Url) error {
 }
 
 func (r *urlRepository) GetByCode(ctx context.Context, code string) (*models.Url, error) {
+	var model models.Url
+
+	cached, err := r.Storage.Cache.Get(ctx, "links:"+code).Result()
+	if err != nil && err != redis.Nil {
+		return nil, err
+	}
+
+	if err != redis.Nil {
+		if err := json.Unmarshal([]byte(cached), &model); err != nil {
+			return nil, err
+		}
+
+		return &model, nil
+	}
+
 	query := `
 		SELECT id, code, original_url, custom_alias, created_at, expires_at, is_active
 			FROM urls
 				WHERE code = $1 AND is_active = true
 	`
 
-	var model models.Url
-
-	err := r.Storage.DB.QueryRow(ctx, query, code).Scan(
+	err = r.Storage.DB.QueryRow(ctx, query, code).Scan(
 		&model.ID,
 		&model.Code,
 		&model.OriginalUrl,
@@ -76,6 +92,19 @@ func (r *urlRepository) GetByCode(ctx context.Context, code string) (*models.Url
 		}
 
 		return nil, err
+	}
+
+	ttl := time.Until(*model.ExpiresAt)
+
+	data, err := json.Marshal(model)
+	if err != nil {
+		return nil, err
+	}
+
+	stat := r.Storage.Cache.Set(ctx, "links:"+model.Code, data, ttl)
+
+	if stat.Err() != nil {
+		return nil, stat.Err()
 	}
 
 	return &model, nil
@@ -106,6 +135,8 @@ func (r *urlRepository) DeleteByCode(ctx context.Context, code string) error {
 			Status:  http.StatusNotFound,
 			Message: fmt.Sprintf("url by '%s' not found", code),
 		}
+	} else {
+		r.Storage.Cache.Del(ctx, "links:"+code)
 	}
 
 	return nil
