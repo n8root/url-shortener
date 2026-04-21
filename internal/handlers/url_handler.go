@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"time"
 	"url-shortener/internal/lib/api"
 	"url-shortener/internal/models"
 
@@ -42,6 +43,8 @@ func NewUrlHandler(
 
 func (h *urlHandler) Create(r *http.Request) (api.Renderer, error) {
 	f := models.CreateUrlForm{}
+
+	time.Sleep(30 * time.Second)
 
 	err := api.BindForm(r, &f)
 	if err != nil {

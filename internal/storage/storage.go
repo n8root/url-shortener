@@ -13,8 +13,8 @@ type Storage struct {
 	Cache *redis.Client
 }
 
-func NewStorage(cfg *config.Config) (*Storage, error) {
-	pg, err := NewPgPool(context.Background(), &cfg.Database)
+func NewStorage(cfg *config.Config, ctx context.Context) (*Storage, error) {
+	pg, err := NewPgPool(ctx, &cfg.Database)
 	if err != nil {
 		return nil, err
 	}

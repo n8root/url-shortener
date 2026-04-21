@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 	"url-shortener/internal/config"
 	"url-shortener/internal/handlers"
 	"url-shortener/internal/lib/api"
@@ -13,6 +18,7 @@ import (
 	"url-shortener/internal/validator"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 )
 
 func main() {
@@ -31,15 +37,22 @@ func main() {
 }
 
 func serve(cfg *config.Config) {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	validator := validator.NewValidator()
 
 	router := chi.NewRouter()
+	router.Use(middleware.Logger)
+	router.Use(middleware.Recoverer)
 
-	storage, err := storage.NewStorage(cfg)
+	storage, err := storage.NewStorage(cfg, ctx)
 
 	if err != nil {
-		log.Fatalf("failed initialization storage %v", err)
+		log.Fatalf("Ошибка инициализации хранилища %v", err)
 	}
+
+	defer storage.DB.Close()
 
 	clickRepo := repositories.NewClickRepository(storage)
 	clickSvc := services.NewClickService(clickRepo, clickRepo)
@@ -62,9 +75,25 @@ func serve(cfg *config.Config) {
 
 	addr := cfg.Server.Addr()
 
-	log.Printf("Server started on %s", addr)
+	srv := &http.Server{Addr: addr, Handler: router}
 
-	if err := http.ListenAndServe(addr, router); err != nil {
-		log.Fatalf("server failed: %v", err)
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Ошибка сервера: %v", err)
+		}
+	}()
+
+	log.Printf("Сервер запущен на %s", addr)
+
+	<-ctx.Done()
+	log.Println("Получен сигнал остановки, завершаем работу...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Ошибка при остановке сервера: %v", err)
 	}
+
+	log.Println("Сервер успешно остановлен")
 }
